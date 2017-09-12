@@ -11,74 +11,21 @@
             [seesaw.core :as s])
   (:gen-class))
 
-;; ;;Note:
-;; ;;java.util.WindowsPreferences is getting pissed at us,
-;; ;;not letting us open.  Recommend going to a file instead...
+(def noisy (atom true))
+(defn toggle-noisy [] (swap! noisy (fn [n] (not n))))
+;;From Stuart Sierra's blog post, for catching otherwise "slient" exceptions
+;;Since we're using multithreading and the like, and we don't want
+;;exceptions to get silently swallowed
+(let [out *out*]
+  (Thread/setDefaultUncaughtExceptionHandler
+   (reify Thread$UncaughtExceptionHandler
+     (uncaughtException [_ thread ex]
+       (when @noisy 
+         (binding [*out* out]
+           (println ["Uncaught Exception on" (.getName thread) ex])))))))
 
-;; (def  editor (atom nil))
-
-;; (defn ed []
-;;   (reset! editor
-;;     (editors/create-console "clj")))
-
-;; (defn kill-ed []
-;;   (println "exiting")
-;;   (reset!   editor nil)
-;;   (s/invoke-later
-;;    (throw (Exception. "Killed REPL!"))))
-
-;; (in-ns 'nightcode.window)
-;; ;custom listener to avoid killing the process for testing...
-;; (defn add-listener!
-;;   "Sets callbacks for window events."
-;;   ([window kill-on-exit?]
-;;    (override-quit-handler!)
-;;    (.addWindowListener window
-;;     (proxy [WindowAdapter] []
-;;       (windowActivated [e]
-;;         ; force hints to hide
-;;         (reset! shortcuts/down? false)
-;;         (shortcuts/toggle-hint! @editors/tabs false)
-;;         (shortcuts/toggle-hints! @ui/root false)
-;;         ; update the project tree and various panes
-;;         (ui/update-project-tree!)
-;;         (file-browser/update-card!)
-;;         (git/update-sidebar!))
-;;       (windowClosing [e]
-;;         (when (and (show-shut-down-dialog!) kill-on-exit?)
-;;           (System/exit 0))))))
-;;   ([window] (add-listener! window true)))
-
-;; (in-ns 'nightrepl.core)
-
-;; ;;create commands to clear the repl...
-;; (defn create-window
-;;   []
-;;   (doto (s/frame :title "Nightrepl"
-;;                  :content (repl/create-pane (ed))
-;;                  :on-close :hide;:exit
-;;                  :size [800 :by 600])
-;;     ; set various window properties
-;;     window/enable-full-screen!
-;;     #(window/add-listener! % false)))
-
-;; (defn -main [& args]
-;;   ; listen for keys while modifier is down
-;;   (shortcuts/listen-for-shortcuts!
-;;     (fn [key-code]
-;;       (case key-code
-;;         ; Q
-;;         81  (do (kill-ed) false) #_(window/confirm-exit-app!)
-;;         ; else
-;;         false)))
-;;   ; this will give us a nice dark theme by default, or allow a lighter theme
-;;   ; by adding "-s light" to the command line invocation
-;;   (window/set-theme! (custom/parse-args args))
-;;   ; create and display the window
-;;   ; it's important to save the window in the ui/root atom
-;;   (s/invoke-later
-;;     (s/show! (reset! ui/root (create-window)))))
-
+;;creates a pane with a project pane, a file-based editor tree and a
+;;repl.
 (defn create-window-content
   "Returns the entire window with all panes."
   [args]
