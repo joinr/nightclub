@@ -12,7 +12,10 @@
                  [seesaw "1.4.5"]]
   :source-paths  ["src" "../NightCode/src/clojure/"]   
   :javac-options ["-target" "1.6" "-source" "1.6" "-Xlint:-options"]
-  ;:aot [nightrepl.core]
-  ;:main nightrepl.core
+  :profiles {:uberjar {:aot [nightclub.core]
+                       :main nightclub.core
+                       :jvm-opts ^:replace ["-Xmx1000m" "-XX:NewSize=200m" "-server"]
+                       }}
+
   )
 
