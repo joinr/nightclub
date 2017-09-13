@@ -7,7 +7,7 @@
                 theoretically more robust.  At a minimum, re-use 
                 his widgets in a modular capacity.  Decouple the 
                 lein dependency and other build components..."
-  :dependencies [[nightcode "1.3.1"]
+  :dependencies [[joinr/nightcode "1.3.3-SNAPSHOT"]
                  [org.clojure/clojure "1.8.0"]
                  [seesaw "1.4.5"]]
   :source-paths  ["src" "../NightCode/src/clojure/"]   
