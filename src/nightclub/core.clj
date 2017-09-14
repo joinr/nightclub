@@ -8,9 +8,14 @@
             [nightcode.shortcuts :as shortcuts]
             [nightcode.ui :as ui]
             [nightcode.window :as window]
+            [nightclub.patches] ;;temporary patches to NC
             [seesaw.core :as s])
   (:gen-class))
 
+;;A really dumb ns for defining an event system for decoupled components
+;;to communicate through (like editor -> repl interactions and the like).
+;;This is not meant to be a high-throughput system; we basically
+;;have an observable atom, upon which we can subscribe to events.
 (def noisy (atom true))
 (defn toggle-noisy [] (swap! noisy (fn [n] (not n))))
 ;;From Stuart Sierra's blog post, for catching otherwise "slient" exceptions
@@ -55,6 +60,8 @@
         :divider-location 0.32
         :resize-weight 0))))
 
+;;note: we're not cleaning up well here, but we're also no longer
+;;shutting down by default.
 (defn create-window
   "Creates the main window."
   [args]
@@ -66,41 +73,102 @@
                  :width 1242
                  :height 768
                  :icon "images/logo_launcher.png"
-                 :on-close :nothing)
+                 :on-close :dispose)
     ; set various window properties
     window/enable-full-screen!
     window/add-listener!))
 
-(defn -main
+(defn main-window
   "Launches the main window."
   [& args]
-  (let [parsed-args (custom/parse-args args)]
-    (window/set-icon! "images/logo_launcher.png")
-    (window/set-theme! parsed-args)
-    (sandbox/create-profiles-clj!)
-    (sandbox/read-file-permissions!)
-    (s/invoke-later
-      ; listen for keys while modifier is down
-      (shortcuts/listen-for-shortcuts!
+  (let [parsed-args (custom/parse-args args)
+        _           (window/set-shutdown! false)
+        ]
+      (window/set-icon! "images/logo_launcher.png")
+      (window/set-theme! parsed-args)
+      (sandbox/create-profiles-clj!)
+      (sandbox/read-file-permissions!)
+      (s/invoke-later
+                                        ; listen for keys while modifier is down
+       (shortcuts/listen-for-shortcuts!
         (fn [key-code]
           (case key-code
-            ; enter
+                                        ; enter
             10 (projects/toggle-project-tree-selection!)
-            ; page up
+                                        ; page up
             33 (editors/move-tab-selection! -1)
-            ; page down
+                                        ; page down
             34 (editors/move-tab-selection! 1)
-            ; up
+                                        ; up
             38 (projects/move-project-tree-selection! -1)
-            ; down
+                                        ; down
             40 (projects/move-project-tree-selection! 1)
-            ; Q
+                                        ; Q
             81 (window/confirm-exit-app!)
-            ; W
+                                        ; W
             87 (editors/close-selected-editor!)
-            ; else
+                                        ; else
             false)))
-      ; create and show the frame
-      (s/show! (reset! ui/root (create-window parsed-args)))
-      ; initialize the project pane
-      (ui/update-project-tree!))))
+                                        ; create and show the frame
+       (s/show! (reset! ui/root (create-window parsed-args)))
+                                        ; initialize the project pane
+       (ui/update-project-tree!))))
+
+(defn ^java.io.Closeable string-push-back-reader 
+  "Creates a PushbackReader from a given string"
+  [^String s]
+  (java.io.PushbackReader. (java.io.StringReader. s)))
+
+(defn string->forms [txt]
+  (let [rdr (string-push-back-reader txt)]
+    (loop [acc []]      
+      (let [res (clojure.edn/read {:eof :end-of-file} rdr )]
+        (if (identical? res :end-of-file)
+          acc
+          (recur (conj acc res)))))))
+
+(defn selected-path [] @nightcode.ui/tree-selection)
+(defn editor-selection []
+  (some->> (get  @editors/editors (selected-path))
+           (:text-area)
+           (.getSelectedText)))
+
+(defn editor-text []
+  (some->> (get  @editors/editors (selected-path))
+           (:text-area)
+           (.getText)))
+  
+(defn eval-selection! []
+  (when-let [selected (editor-selection)]
+    (do (repl/println-repl! "")
+        (repl/send-repl! (clojure.string/join \space (string->forms selected))))))
+
+(defn eval-selected-file []
+  (when-let [txt (editor-text)]
+    (repl/send-repl! txt)))
+  
+(defn load-selected-file! []
+  (when-let [p (selected-path)]    
+    (repl/println-repl! (str [:loading-file p]))
+    (repl/echo-repl! `(load-file ~p))))
+
+;;hook up the plumbing...
+(defn register-handlers! []
+  (editors/set-handler :eval-selection (fn [_] (eval-selection!)))
+  (editors/set-handler :load-in-repl   (fn [_] (load-selected-file!)))
+  )
+
+(defn attach!
+    "Creates a nightclub window, with project, repl, and file editor(s).
+     Caller may supply an initial form for evaluation via :init-eval, 
+     and behavior for closing."
+  [& {:keys [init-eval on-close args]
+       :or {on-close :dispose args ""}}]
+  (let [_ (case on-close
+            :exit (window/set-shutdown! true)
+            (window/set-shutdown! false))]
+    (do (main-window args)
+        (register-handlers!)
+        (when init-eval
+          (repl/send-repl! (str init-eval))))))
+
