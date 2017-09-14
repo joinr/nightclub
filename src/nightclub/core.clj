@@ -112,7 +112,10 @@
                                         ; create and show the frame
        (s/show! (reset! ui/root (create-window parsed-args)))
                                         ; initialize the project pane
-       (ui/update-project-tree!))))
+       (ui/update-project-tree!)
+       ;;necessary hack to get linenumbers correct
+       (reset! editors/font-size @editors/font-size) 
+       )))
 
 (defn ^java.io.Closeable string-push-back-reader 
   "Creates a PushbackReader from a given string"
@@ -137,6 +140,12 @@
   (some->> (get  @editors/editors (selected-path))
            (:text-area)
            (.getText)))
+
+(defn editor-pane []
+  (some->> (get  @editors/editors (selected-path))
+           (:view)
+           (.getLayout)
+           (#(.getLayoutComponent % "Center"))))
   
 (defn eval-selection! []
   (when-let [selected (editor-selection)]
@@ -157,6 +166,17 @@
   (editors/set-handler :eval-selection (fn [_] (eval-selection!)))
   (editors/set-handler :load-in-repl   (fn [_] (load-selected-file!)))
   )
+
+(defn resize-plaf-font [nm size]
+  (let [fnt (javax.swing.UIManager/get nm)
+        size (float size)
+        newfont (.deriveFont fnt (float size))]
+    (javax.swing.UIManager/put nm 
+        (javax.swing.plaf.FontUIResource. newfont))))
+
+(defn update-look []
+  (s/invoke-now
+   (fn [] (javax.swing.SwingUtilities/updateComponentTreeUI @ui/root))))
 
 (defn attach!
     "Creates a nightclub window, with project, repl, and file editor(s).
