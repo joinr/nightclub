@@ -9,7 +9,8 @@
             [nightcode.ui :as ui]
             [nightcode.window :as window]
             [nightclub.patches] ;;temporary patches to NC
-            [seesaw.core :as s])
+            [seesaw.core :as s]
+            [alembic.still])
   (:gen-class))
 
 ;;A really dumb ns for defining an event system for decoupled components
@@ -146,11 +147,19 @@
            (:view)
            (.getLayout)
            (#(.getLayoutComponent % "Center"))))
-  
+
+(defn stringify [frm]
+  (cond (string? frm)  (str \" frm \")
+        (char? frm)    (str "\\" frm)
+        :else  (str frm)))
+
 (defn eval-selection! []
   (when-let [selected (editor-selection)]
     (do (repl/println-repl! "")
-        (repl/send-repl! (clojure.string/join \space (string->forms selected))))))
+        (->> (string->forms selected)
+             (map stringify)
+             (clojure.string/join \space)             
+             (repl/send-repl!)))))
 
 (defn eval-selected-file []
   (when-let [txt (editor-text)]
@@ -163,8 +172,8 @@
 
 ;;hook up the plumbing...
 (defn register-handlers! []
-  (editors/set-handler :eval-selection (fn [_] (eval-selection!)))
-  (editors/set-handler :load-in-repl   (fn [_] (load-selected-file!)))
+  (editors/set-handler :eval-selection (fn [_] (future (eval-selection!))))
+  (editors/set-handler :load-in-repl   (fn [_] (future (load-selected-file!))))
   )
 
 (defn resize-plaf-font [nm size]
@@ -177,6 +186,9 @@
 (defn update-look []
   (s/invoke-now
    (fn [] (javax.swing.SwingUtilities/updateComponentTreeUI @ui/root))))
+
+(defn add-dependencies! [xs]
+    (alembic.still/distill xs))
 
 (defn attach!
     "Creates a nightclub window, with project, repl, and file editor(s).
