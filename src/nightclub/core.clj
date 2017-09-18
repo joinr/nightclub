@@ -65,26 +65,30 @@
 
 ;;note: we're not cleaning up well here, but we're also no longer
 ;;shutting down by default.
+;;note: we now allow caller to pass in window-args...
 (defn create-window
   "Creates the main window."
-  [args]
-  (doto (s/frame :title (str "Nightcode " (or (some-> "nightcode.core"
-                                                      utils/get-project
-                                                      (nth 2))
-                                              "beta"))
-                 :content (create-window-content args)
-                 :width 1242
-                 :height 768
-                 :icon "images/logo_launcher.png"
-                 :on-close :dispose)
-    ; set various window properties
-    window/enable-full-screen!
-    window/add-listener!))
-
+  [& {:keys [window-args cli-args]}]
+  (let [window-args (merge
+                     {:title (str "Nightcode " (or (some-> "nightcode.core"
+                                                           utils/get-project
+                                                           (nth 2))
+                                                   "beta"))
+                      :content (create-window-content cli-args)
+                      :width 1242
+                      :height 768
+                      :icon "images/logo_launcher.png"
+                      :on-close :dispose}
+                     window-args)]
+    (doto (apply s/frame (flatten (seq window-args)))
+                                        ; set various window properties
+      window/enable-full-screen!
+      window/add-listener!)))
+   
 (defn main-window
   "Launches the main window."
-  [& args]
-  (let [parsed-args (custom/parse-args args)
+  [& {:keys [window-args cli-args]}]
+  (let [parsed-args (custom/parse-args cli-args)
         _           (window/set-shutdown! false)
         init-eval (when @init (let [res @init
                                     _   (reset! init nil)]
@@ -116,7 +120,8 @@
                                         ; else
             false)))
                                         ; create and show the frame
-       (s/show! (reset! ui/root (create-window parsed-args)))
+       (s/show! (reset! ui/root (create-window :window-args window-args
+                                               :cli-args parsed-args)))
                                         ; initialize the project pane
        (ui/update-project-tree!)
        ;;necessary hack to get linenumbers correct
@@ -200,14 +205,15 @@
     "Creates a nightclub window, with project, repl, and file editor(s).
      Caller may supply an initial form for evaluation via :init-eval, 
      and behavior for closing."
-  [& {:keys [init-eval on-close args]
-       :or {on-close :dispose args ""}}]
+  [& {:keys [init-eval on-close window-args cli-args]
+       :or {on-close :dispose cli-args ""}}]
   (let [_ (case on-close
             :exit (window/set-shutdown! true)
             (window/set-shutdown! false))
         _   (reset! init (or init-eval
                              (str "(ns " *ns* ")")))]
-    (do (main-window args)
+    (do (main-window :window-args window-args
+                     :cli-args cli-args)
         (register-handlers!)
         )))
 
