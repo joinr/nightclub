@@ -69,7 +69,9 @@
 (defn create-window
   "Creates the main window."
   [& {:keys [window-args cli-args]}]
-  (let [window-args (merge
+  (let [_   (window/set-shutdown!  (= (:on-close window-args)
+                                      :exit))
+        window-args (merge
                      {:title (str "Nightcode " (or (some-> "nightcode.core"
                                                            utils/get-project
                                                            (nth 2))
