@@ -13,6 +13,8 @@
             [alembic.still])
   (:gen-class))
 
+;;initial expression to eval in embedded repl
+(def init (atom nil))
 ;;A really dumb ns for defining an event system for decoupled components
 ;;to communicate through (like editor -> repl interactions and the like).
 ;;This is not meant to be a high-throughput system; we basically
@@ -84,6 +86,9 @@
   [& args]
   (let [parsed-args (custom/parse-args args)
         _           (window/set-shutdown! false)
+        init-eval (when @init (let [res @init
+                                    _   (reset! init nil)]
+                                res))
         ]
       (window/set-icon! "images/logo_launcher.png")
       (window/set-theme! parsed-args)
@@ -115,7 +120,8 @@
                                         ; initialize the project pane
        (ui/update-project-tree!)
        ;;necessary hack to get linenumbers correct
-       (reset! editors/font-size @editors/font-size) 
+       (reset! editors/font-size @editors/font-size)
+       (when init-eval (repl/send-repl! (str init-eval)))
        )))
 
 (defn ^java.io.Closeable string-push-back-reader 
@@ -198,9 +204,10 @@
        :or {on-close :dispose args ""}}]
   (let [_ (case on-close
             :exit (window/set-shutdown! true)
-            (window/set-shutdown! false))]
+            (window/set-shutdown! false))
+        _   (reset! init (or init-eval
+                             (str "(ns " *ns* ")")))]
     (do (main-window args)
         (register-handlers!)
-        (when init-eval
-          (repl/send-repl! (str init-eval))))))
+        )))
 
