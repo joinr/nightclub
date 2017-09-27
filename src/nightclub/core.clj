@@ -200,8 +200,31 @@
   (s/invoke-now
    (fn [] (javax.swing.SwingUtilities/updateComponentTreeUI @ui/root))))
 
-(defn add-dependencies! [xs]
-    (alembic.still/distill xs))
+;;in case we're not in a lein project, i.e. an embedded repl...
+(def default-repositories
+  {"central" {:url "https://repo1.maven.org/maven2/", :snapshots false},
+   "clojars" {:url "https://repo.clojars.org/"}})
+
+(defn add-dependencies!
+  "Given a vector of clojure dependency vectors - or a single dependency 
+   vector - dynamically resolves the dependencies and adds them to the 
+   class path using alembic.still/distill.  Tries to determine if 
+   the jvm session was launch local to a project, if not will use 
+   default clojure repositories by default.
+   
+   usage:
+   (add-dependencies! '[incanter \"1.5.6\"])
+   (add-dependencies! '[[incanter \"1.5.6\"][seesaw \"1.4.5\"]])"
+  [deps & {:keys [repositories still verbose proxy]
+                               :or {still alembic.still/the-still
+                                    verbose true}
+                               :as options}]
+  (let [repositories (or repositories
+                         (when-not
+                           (.exists (clojure.java.io/file "project.clj"))
+                           default-repositories))
+        opts         (assoc options :repositories repositories)]
+    (apply alembic.still/distill (into [deps] (flatten (seq opts))))))
 
 (defn attach!
     "Creates a nightclub window, with project, repl, and file editor(s).
