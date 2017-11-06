@@ -72,7 +72,7 @@
   (let [_   (window/set-shutdown!  (= (:on-close window-args)
                                       :exit))
         window-args (merge
-                     {:title (str "Nightcode " (or (some-> "nightcode.core"
+                     {:title (str "Nightclub Embedded REPL " #_(or (some-> "nightcode.core"
                                                            utils/get-project
                                                            (nth 2))
                                                    "beta"))
