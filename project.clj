@@ -10,7 +10,8 @@
   :dependencies [[joinr/nightcode "1.3.3-SNAPSHOT"]
                  [org.clojure/clojure "1.8.0"]
                  [seesaw "1.4.5"]
-                 [alembic "0.3.2"] ;;exploring dynamic dependencies...
+                 ;;[alembic "0.3.2"] ;;exploring dynamic dependencies...
+                 [com.cemerick/pomegranate "1.0.0"] ;migrated.
                  ]
   :source-paths  ["src" "../NightCode/src/clojure/"]   
   :javac-options ["-target" "1.6" "-source" "1.6" "-Xlint:-options"]

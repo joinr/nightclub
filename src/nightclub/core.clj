@@ -10,7 +10,9 @@
             [nightcode.window :as window]
             [nightclub.patches] ;;temporary patches to NC
             [seesaw.core :as s]
-            [alembic.still])
+            ;[alembic.still]
+            [cemerick.pomegranate :refer [add-dependencies]]
+            )
   (:gen-class))
 
 ;;initial expression to eval in embedded repl
@@ -224,7 +226,14 @@
                            (.exists (clojure.java.io/file "project.clj"))
                            default-repositories))
         opts         (assoc options :repositories repositories)]
-    (apply alembic.still/distill (into [deps] (flatten (seq opts))))))
+                                        ;(apply alembic.still/distill (into [deps] (flatten (seq opts))))
+    (add-dependencies :coordinates deps
+                      :repositories default-repositories
+                      #_(merge cemerick.pomegranate.aether/maven-central
+                               {"clojars" "https://clojars.org/repo"}))
+    ))
+
+
 
 (defn attach!
     "Creates a nightclub window, with project, repl, and file editor(s).
