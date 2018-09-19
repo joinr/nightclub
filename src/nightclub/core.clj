@@ -10,7 +10,6 @@
             [nightcode.window :as window]
             [nightclub.patches] ;;temporary patches to NC
             [seesaw.core :as s]
-            ;[alembic.still]
             [cemerick.pomegranate :refer [add-dependencies]]
             )
   (:gen-class))
@@ -217,21 +216,16 @@
    usage:
    (add-dependencies! '[incanter \"1.5.6\"])
    (add-dependencies! '[[incanter \"1.5.6\"][seesaw \"1.4.5\"]])"
-  [deps & {:keys [repositories still verbose proxy]
-                               :or {still alembic.still/the-still
-                                    verbose true}
-                               :as options}]
+  [deps & {:keys [repositories verbose proxy]
+           :or {verbose true}
+           :as options}]
   (let [repositories (or repositories
                          (when-not
                            (.exists (clojure.java.io/file "project.clj"))
                            default-repositories))
-        opts         (assoc options :repositories repositories)]
-                                        ;(apply alembic.still/distill (into [deps] (flatten (seq opts))))
+        opts         (assoc options :repositories repositories)]        
     (add-dependencies :coordinates deps
-                      :repositories default-repositories
-                      #_(merge cemerick.pomegranate.aether/maven-central
-                               {"clojars" "https://clojars.org/repo"}))
-    ))
+                      :repositories default-repositories)))
 
 
 
