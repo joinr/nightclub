@@ -1,4 +1,4 @@
-(defproject joinr/nightclub "0.0.4-SNAPSHOT"
+(defproject joinr/nightclub "0.0.5-SNAPSHOT"
   :description "This is a revisitation of the nightcode swing database. Based on
                 Zach Oakes's body of work. The intent is to extend his working
                 example from NightCode, and provide a powerful facility for
