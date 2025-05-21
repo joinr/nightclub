@@ -172,7 +172,7 @@
     (do (repl/println-repl! "")
         (->> (string->forms selected)
              (map stringify)
-             (clojure.string/join \space)             
+             (clojure.string/join \space)
              (repl/send-repl!)))))
 
 (defn eval-selected-file []
