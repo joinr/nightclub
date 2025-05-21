@@ -6,6 +6,8 @@
                 nightlite, but theoretically more robust. At a minimum, re-use
                 his widgets in a modular capacity. Decouple the lein dependency
                 and other build components..."
+  :license {:name "Public Domain"
+            :url "http://unlicense.org/UNLICENSE"}
   :dependencies [[joinr/nightcode "1.3.7-SNAPSHOT"]
                  [org.clojure/clojure "1.10.3"]
                  [org.clojure/core.async "1.3.622"]
