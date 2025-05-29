@@ -12,7 +12,7 @@
                  [org.clojure/clojure "1.10.3"]
                  [org.clojure/core.async "1.3.622"]
                  [seesaw "1.5.0"]]
-  :source-paths  ["src" "../Nightcode/src/clojure/"]
+  :source-paths  ["src" #_"../Nightcode/src/clojure/"]
   :javac-options ["-target" "1.6" "-source" "1.6" "-Xlint:-options"]
   :profiles {:ordered {:aot [nightclub.core]}
              :uberjar {:aot [nightclub.core]

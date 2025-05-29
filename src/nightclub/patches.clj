@@ -27,7 +27,6 @@
      (set-nimbus!)
      (let [{:keys [shade skin-object theme-resource]} args]
        (when theme-resource (reset! ui/theme-resource theme-resource))
-       (set-substance!)
        (SubstanceLookAndFeel/setSkin (or #_skin-object (GraphiteSkin.)))
        (substance/enforce-event-dispatch)))))
 
