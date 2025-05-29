@@ -11,7 +11,6 @@
   :dependencies [[joinr/nightcode "1.3.7-SNAPSHOT"]
                  [org.clojure/clojure "1.10.3"]
                  [org.clojure/core.async "1.3.622"]
-                 [com.formdev/flatlaf "3.6"]
                  [seesaw "1.5.0"]]
   :source-paths  ["src" "../Nightcode/src/clojure/"]
   :javac-options ["-target" "1.6" "-source" "1.6" "-Xlint:-options"]
